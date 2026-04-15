@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Driver Not Found</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .box {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 40px 32px;
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
+    }
+    .icon  { font-size: 52px; margin-bottom: 16px; }
+    h1     { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    p      { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+    .phone { font-family: monospace; color: #f1f5f9; font-size: 15px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="icon">🚫</div>
+    <h1>Driver Not Found</h1>
+    <p>The phone number</p>
+    <div class="phone">{{ phone }}</div>
+    <p>is not registered or has been deactivated.<br>
+    Please contact your dispatcher.</p>
+  </div>
+</body>
+</html>

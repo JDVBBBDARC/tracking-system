@@ -1,0 +1,328 @@
+/* ============================================================
+   PH GPS Tracking System — Global Styles
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sidebar-w: 220px;
+  --primary:   #3b82f6;
+  --success:   #22c55e;
+  --danger:    #ef4444;
+  --warning:   #f59e0b;
+  --bg:        #f1f5f9;
+  --card-bg:   #ffffff;
+  --text:      #111827;
+  --muted:     #6b7280;
+  --border:    #e5e7eb;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   Sidebar
+   ============================================================ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: #0f172a;
+  color: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 18px;
+  border-bottom: 1px solid #1e293b;
+}
+.brand-icon { font-size: 22px; }
+.brand-text { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+
+.sidebar-nav {
+  list-style: none;
+  padding: 12px 0;
+  flex: 1;
+}
+.sidebar-nav li { margin: 2px 8px; }
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.nav-link:hover  { background: #1e293b; color: #f1f5f9; }
+.nav-link.active { background: #1d4ed8; color: #fff; }
+.nav-icon { font-size: 16px; }
+
+.sidebar-footer {
+  padding: 14px 18px;
+  border-top: 1px solid #1e293b;
+  color: #475569;
+  font-size: 11px;
+}
+
+/* ============================================================
+   Main wrapper / topbar
+   ============================================================ */
+.main-wrapper {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-time  { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Flash messages
+   ============================================================ */
+.flash-container { padding: 12px 24px 0; }
+.flash {
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity .4s;
+}
+.flash-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.flash-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* ============================================================
+   Content area
+   ============================================================ */
+.content { padding: 20px 24px; flex: 1; }
+
+.page-layout { display: flex; flex-direction: column; gap: 20px; }
+
+/* ============================================================
+   Cards
+   ============================================================ */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-header h3 { font-size: 15px; font-weight: 600; }
+.card-body  { padding: 20px; }
+.card-body.p-0 { padding: 0; }
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 13px; font-weight: 500; color: var(--text); }
+.form-group input, .form-group select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  background: #fff;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+}
+.form-hint { font-size: 11px; color: var(--muted); }
+.required  { color: var(--danger); }
+.form-submit { justify-content: flex-end; }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary   { background: var(--primary); color: #fff; }
+.btn-success   { background: var(--success); color: #fff; }
+.btn-danger    { background: var(--danger);  color: #fff; }
+.btn-warning   { background: var(--warning); color: #fff; }
+.btn-secondary { background: #e5e7eb; color: var(--text); }
+.btn:hover     { opacity: .88; }
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+/* ============================================================
+   Tables
+   ============================================================ */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  background: #f9fafb;
+  border-bottom: 1px solid var(--border);
+}
+.table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+.table tbody tr:hover      { background: #f9fafb; }
+.table tbody tr:last-child td { border-bottom: none; }
+.row-inactive { opacity: .5; }
+
+/* ============================================================
+   Badges
+   ============================================================ */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: var(--text);
+}
+.badge-success { background: #dcfce7; color: #166534; }
+.badge-muted   { background: #f3f4f6; color: #6b7280; }
+.badge-globe   { background: #dcfce7; color: #166534; }
+.badge-smart   { background: #dbeafe; color: #1e40af; }
+.badge-dito    { background: #ede9fe; color: #5b21b6; }
+
+/* ============================================================
+   Tracking link cell
+   ============================================================ */
+.link-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+}
+.track-url {
+  font-size: 11px;
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.btn-copy, .btn-open {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 7px;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.btn-copy:hover, .btn-open:hover { background: #e5e7eb; }
+
+/* ============================================================
+   Action buttons
+   ============================================================ */
+.action-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ============================================================
+   Empty state
+   ============================================================ */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.empty-state a { color: var(--primary); }
+
+/* ============================================================
+   Stat row
+   ============================================================ */
+.stat-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+}
+.stat-card .stat-num   { font-size: 28px; font-weight: 700; color: var(--text); }
+.stat-card .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-online .stat-num { color: var(--success); }
+
+/* ============================================================
+   History table specifics
+   ============================================================ */
+.phone-cell { font-family: monospace; font-size: 13px; }
+
+/* ============================================================
+   Scrollbar
+   ============================================================ */
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }

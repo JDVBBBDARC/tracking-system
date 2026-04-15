@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Live Map{% endblock %}
+{% block page_title %}Live Map{% endblock %}
+
+{% block extra_head %}
+<style>
+  #map { height: calc(100vh - 120px); width: 100%; border-radius: 10px; }
+  .map-overlay {
+    position: absolute; top: 80px; right: 20px; z-index: 1000;
+    background: #fff; border-radius: 10px; padding: 14px 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12); min-width: 220px;
+  }
+  .map-overlay h4 { margin: 0 0 10px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; }
+  .driver-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid #f3f4f6; cursor: pointer;
+  }
+  .driver-item:last-child { border-bottom: none; }
+  .driver-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-online  { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.25); }
+  .dot-offline { background: #d1d5db; }
+  .driver-info { flex: 1; }
+  .driver-info strong { display: block; font-size: 13px; color: #111827; }
+  .driver-info small  { font-size: 11px; color: #6b7280; }
+  .driver-phone { font-size: 11px; color: #9ca3af; }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 14px; }
+  .stat-card {
+    flex: 1; background: #f9fafb; border-radius: 8px;
+    padding: 10px 14px; text-align: center;
+  }
+  .stat-card .stat-num { font-size: 22px; font-weight: 700; color: #111827; }
+  .stat-card .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .stat-online .stat-num { color: #22c55e; }
+  .refresh-hint { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="stat-row">
+  <div class="stat-card stat-online">
+    <div class="stat-num" id="cnt-online">0</div>
+    <div class="stat-label">Online</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="cnt-total">{{ drivers|length }}</div>
+    <div class="stat-label">Total Drivers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="cnt-offline">0</div>
+    <div class="stat-label">Offline</div>
+  </div>
+</div>
+
+<!-- Map + sidebar overlay -->
+<div style="position:relative;">
+  <div id="map"></div>
+
+  <!-- Driver list panel -->
+  <div class="map-overlay">
+    <h4>Active Drivers</h4>
+    <div id="driver-list">
+      {% if drivers %}
+        {% for d in drivers %}
+        <div class="driver-item" data-phone="{{ d.phone }}" onclick="focusDriver('{{ d.phone }}')">
+          <div class="driver-dot dot-offline" id="dot-{{ d.phone }}"></div>
+          <div class="driver-info">
+            <strong>{{ d.name }}</strong>
+            <small>{{ d.vehicle or 'No vehicle' }}</small>
+          </div>
+          <div class="driver-phone">{{ d.phone }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:#6b7280;font-size:13px;">No drivers registered yet.<br>
+          <a href="{{ url_for('drivers') }}">Add a driver →</a></p>
+      {% endif %}
+    </div>
+    <div class="refresh-hint">Updates every 5 seconds</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // --- Map setup (centered on Philippines) ---
+  const map = L.map('map').setView([12.8797, 121.7740], 6);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  // --- Marker management ---
+  const markers = {};
+  const trails  = {};
+
+  function makeIcon(online) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="
+        background:${online ? '#22c55e' : '#6b7280'};
+        width:14px; height:14px; border-radius:50%;
+        border:3px solid #fff;
+        box-shadow:0 2px 6px rgba(0,0,0,.35);
+      "></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+  }
+
+  function focusDriver(phone) {
+    if (markers[phone]) {
+      map.flyTo(markers[phone].getLatLng(), 15, { animate: true, duration: 1 });
+    }
+  }
+
+  // --- Poll server for latest locations ---
+  async function refreshLocations() {
+    try {
+      const res  = await fetch('/api/location/all');
+      const data = await res.json();
+
+      let onlineCount = 0;
+
+      data.forEach(driver => {
+        const online = driver.online;
+        if (online) onlineCount++;
+
+        // Update status dot in sidebar
+        const dot = document.getElementById('dot-' + driver.phone);
+        if (dot) {
+          dot.className = 'driver-dot ' + (online ? 'dot-online' : 'dot-offline');
+        }
+
+        // Update last-seen in sidebar
+        const item = document.querySelector(`.driver-item[data-phone="${driver.phone}"] small`);
+        if (item) {
+          item.textContent = online
+            ? `🟢 ${driver.speed || 0} km/h — ${driver.timestamp || ''}`
+            : (driver.timestamp ? `Last seen: ${driver.timestamp}` : 'Never tracked');
+        }
+
+        if (!driver.latitude || !driver.longitude) return;
+
+        const latlng = [driver.latitude, driver.longitude];
+        const popup  = `
+          <b>${driver.driver_name}</b><br>
+          📱 ${driver.phone}<br>
+          🚗 ${driver.vehicle || '—'}<br>
+          🕐 ${driver.timestamp}<br>
+          💨 ${driver.speed || 0} km/h<br>
+          🎯 Accuracy: ${driver.accuracy ? driver.accuracy.toFixed(0) + ' m' : '—'}
+        `;
+
+        if (markers[driver.phone]) {
+          markers[driver.phone].setLatLng(latlng);
+          markers[driver.phone].setIcon(makeIcon(online));
+          markers[driver.phone].getPopup().setContent(popup);
+        } else {
+          markers[driver.phone] = L.marker(latlng, { icon: makeIcon(online) })
+            .bindPopup(popup)
+            .addTo(map);
+        }
+
+        // Draw trail (last 20 points)
+        if (online) {
+          fetchTrail(driver.phone);
+        }
+      });
+
+      document.getElementById('cnt-online').textContent  = onlineCount;
+      document.getElementById('cnt-offline').textContent = data.length - onlineCount;
+      document.getElementById('cnt-total').textContent   = data.length;
+
+    } catch (err) {
+      console.error('Location refresh error:', err);
+    }
+  }
+
+  async function fetchTrail(phone) {
+    try {
+      const res  = await fetch('/api/location/history/' + phone);
+      const logs = await res.json();
+      const points = logs
+        .filter(l => l.latitude && l.longitude)
+        .map(l => [l.latitude, l.longitude]);
+
+      if (trails[phone]) map.removeLayer(trails[phone]);
+      if (points.length > 1) {
+        trails[phone] = L.polyline(points, {
+          color: '#3b82f6', weight: 3, opacity: 0.6
+        }).addTo(map);
+      }
+    } catch (e) {}
+  }
+
+  // Initial load + auto-refresh
+  refreshLocations();
+  setInterval(refreshLocations, 5000);
+</script>
+{% endblock %}

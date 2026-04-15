@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}History — {{ driver.name }}{% endblock %}
+{% block page_title %}Location History — {{ driver.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  #hist-map { height: 380px; border-radius: 10px; margin-bottom: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:16px;">
+  <a href="{{ url_for('drivers') }}" class="btn btn-secondary">← Back to Drivers</a>
+</div>
+
+<!-- Map showing trail -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <h3>Route Trail — Last 100 Points</h3>
+    <span style="font-size:12px;color:#6b7280;">{{ driver.phone }}</span>
+  </div>
+  <div class="card-body">
+    <div id="hist-map"></div>
+  </div>
+</div>
+
+<!-- Log table -->
+<div class="card">
+  <div class="card-header">
+    <h3>Location Log <span class="badge">{{ logs|length }}</span></h3>
+  </div>
+  <div class="card-body p-0">
+    {% if logs %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Timestamp</th>
+          <th>Latitude</th>
+          <th>Longitude</th>
+          <th>Speed (km/h)</th>
+          <th>Accuracy (m)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td class="phone-cell">{{ '%.6f'|format(log.latitude) }}</td>
+          <td class="phone-cell">{{ '%.6f'|format(log.longitude) }}</td>
+          <td>{{ '%.1f'|format(log.speed * 3.6) if log.speed else '0' }}</td>
+          <td>{{ '%.0f'|format(log.accuracy) if log.accuracy else '—' }}</td>
+          <td>
+            {% if log.is_tracking %}
+              <span class="badge badge-success">Active</span>
+            {% else %}
+              <span class="badge badge-muted">Stopped</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="empty-state">No location history found for this driver.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const map = L.map('hist-map').setView([12.8797, 121.7740], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
+
+  const logs = {{ logs | tojson(default=lambda o: {'lat': o.latitude, 'lng': o.longitude, 'ts': o.timestamp.strftime('%H:%M:%S')}) if logs else '[]' }};
+
+  // Build points from Jinja
+  const points = [
+    {% for log in logs %}
+      [{{ log.latitude }}, {{ log.longitude }}]{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  if (points.length > 0) {
+    // Draw trail
+    if (points.length > 1) {
+      L.polyline(points, { color: '#3b82f6', weight: 3, opacity: .7 }).addTo(map);
+    }
+
+    // Start marker (green)
+    L.circleMarker(points[points.length - 1], {
+      radius: 8, color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1
+    }).bindPopup('Start').addTo(map);
+
+    // End marker (red)
+    L.circleMarker(points[0], {
+      radius: 8, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1
+    }).bindPopup('Latest').addTo(map);
+
+    // Fit map to trail
+    map.fitBounds(L.latLngBounds(points), { padding: [30, 30] });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>GPS Tracking — {{ driver.name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header .logo { font-size: 40px; margin-bottom: 8px; }
+    .header h1  { font-size: 20px; font-weight: 700; }
+    .header p   { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+    .driver-card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 20px;
+    }
+    .driver-card .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+    .driver-card .value { font-size: 16px; font-weight: 600; margin-top: 2px; }
+    .driver-card .row { margin-bottom: 12px; }
+    .driver-card .row:last-child { margin-bottom: 0; }
+
+    .network-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .globe  { background: #166534; color: #86efac; }
+    .smart  { background: #1e3a5f; color: #93c5fd; }
+    .dito   { background: #4c1d95; color: #c4b5fd; }
+    .unknown{ background: #374151; color: #d1d5db; }
+
+    /* Big tracking button */
+    #btn-track {
+      width: 100%;
+      max-width: 400px;
+      padding: 18px;
+      border-radius: 14px;
+      border: none;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      margin-bottom: 16px;
+    }
+    #btn-track.start {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+    }
+    #btn-track.stop {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+    }
+    #btn-track:active { transform: scale(.97); }
+
+    /* Status card */
+    .status-card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 16px;
+    }
+    .status-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .status-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #374151; flex-shrink: 0;
+    }
+    .status-dot.active {
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,.2);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(34,197,94,.2); }
+      50%       { box-shadow: 0 0 0 8px rgba(34,197,94,.08); }
+    }
+    .status-text { font-size: 15px; font-weight: 600; }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-box {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-box .s-val { font-size: 18px; font-weight: 700; color: #38bdf8; }
+    .stat-box .s-lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+    .coords-box {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.8;
+    }
+    .coords-box span { color: #e2e8f0; font-weight: 500; }
+
+    .error-msg {
+      background: #450a0a;
+      border: 1px solid #ef4444;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 13px;
+      color: #fca5a5;
+      text-align: center;
+      width: 100%; max-width: 400px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .info-msg {
+      font-size: 12px;
+      color: #475569;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">📍</div>
+    <h1>PH GPS Tracker</h1>
+    <p>Your location is shared only while this page is open.</p>
+  </div>
+
+  <!-- Driver info -->
+  <div class="driver-card">
+    <div class="row">
+      <div class="label">Driver Name</div>
+      <div class="value">{{ driver.name }}</div>
+    </div>
+    <div class="row">
+      <div class="label">Phone Number</div>
+      <div class="value">{{ driver.phone }}</div>
+    </div>
+    <div class="row">
+      <div class="label">Vehicle</div>
+      <div class="value">{{ driver.vehicle or '—' }}</div>
+    </div>
+    <div class="row">
+      <div class="label">Network</div>
+      <div class="value">
+        <span class="network-badge
+          {% if network == 'Globe' %}globe
+          {% elif network == 'Smart/TNT' %}smart
+          {% elif network == 'DITO' %}dito
+          {% else %}unknown{% endif %}">
+          {{ network }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start/Stop button -->
+  <button id="btn-track" class="start" onclick="toggleTracking()">
+    🟢 Start Sharing Location
+  </button>
+
+  <!-- Error message -->
+  <div class="error-msg" id="error-msg"></div>
+
+  <!-- Status card -->
+  <div class="status-card">
+    <div class="status-header">
+      <div class="status-dot" id="status-dot"></div>
+      <div class="status-text" id="status-text">Not tracking</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="s-val" id="val-speed">—</div>
+        <div class="s-lbl">Speed (km/h)</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-val" id="val-accuracy">—</div>
+        <div class="s-lbl">Accuracy (m)</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-val" id="val-updates">0</div>
+        <div class="s-lbl">Updates Sent</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-val" id="val-time">—</div>
+        <div class="s-lbl">Last Update</div>
+      </div>
+    </div>
+
+    <div class="coords-box">
+      Lat: <span id="val-lat">—</span> &nbsp;|&nbsp; Lng: <span id="val-lng">—</span>
+    </div>
+  </div>
+
+  <p class="info-msg">
+    Keep this page open while driving.<br/>
+    Your location updates every 10 seconds.<br/>
+    Tap <strong>Stop</strong> when you're done.
+  </p>
+
+<script>
+  const PHONE       = "{{ driver.phone }}";
+  const INTERVAL_MS = 10000;  // 10 seconds
+
+  let isTracking   = false;
+  let watchId      = null;
+  let sendInterval = null;
+  let updateCount  = 0;
+  let lastPosition = null;
+
+  function toggleTracking() {
+    if (isTracking) {
+      stopTracking();
+    } else {
+      startTracking();
+    }
+  }
+
+  function startTracking() {
+    if (!navigator.geolocation) {
+      showError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setStatus('Requesting location permission...', false);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        isTracking = true;
+        updateUI(true);
+        lastPosition = pos;
+        sendLocation(pos);
+
+        // Watch position for real-time updates
+        watchId = navigator.geolocation.watchPosition(
+          (p) => { lastPosition = p; },
+          (e) => { showError('GPS error: ' + e.message); },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
+
+        // Send to server every 10 seconds
+        sendInterval = setInterval(() => {
+          if (lastPosition) sendLocation(lastPosition);
+        }, INTERVAL_MS);
+      },
+      (err) => {
+        let msg = 'Location error.';
+        if (err.code === 1) msg = 'Location permission denied. Please allow location access in your browser settings.';
+        if (err.code === 2) msg = 'Location unavailable. Make sure GPS is enabled.';
+        if (err.code === 3) msg = 'Location request timed out. Please try again.';
+        showError(msg);
+        setStatus('Permission denied', false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  function stopTracking() {
+    isTracking = false;
+    if (watchId !== null)      { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if (sendInterval !== null) { clearInterval(sendInterval); sendInterval = null; }
+
+    // Notify server
+    fetch('/api/location/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: PHONE })
+    });
+
+    updateUI(false);
+    setStatus('Tracking stopped', false);
+  }
+
+  async function sendLocation(pos) {
+    try {
+      const payload = {
+        phone:     PHONE,
+        latitude:  pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy:  pos.coords.accuracy,
+        speed:     pos.coords.speed,
+        heading:   pos.coords.heading
+      };
+
+      const res = await fetch('/api/location/update', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        updateCount++;
+        hideError();
+        document.getElementById('val-updates').textContent = updateCount;
+        document.getElementById('val-lat').textContent     = pos.coords.latitude.toFixed(6);
+        document.getElementById('val-lng').textContent     = pos.coords.longitude.toFixed(6);
+        document.getElementById('val-accuracy').textContent = pos.coords.accuracy
+          ? pos.coords.accuracy.toFixed(0) : '—';
+        document.getElementById('val-speed').textContent = pos.coords.speed
+          ? (pos.coords.speed * 3.6).toFixed(1) : '0';
+
+        const now = new Date();
+        document.getElementById('val-time').textContent =
+          now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        setStatus('🟢 Sharing location...', true);
+      }
+    } catch (err) {
+      showError('Cannot reach server. Check your internet connection.');
+    }
+  }
+
+  function updateUI(tracking) {
+    const btn = document.getElementById('btn-track');
+    if (tracking) {
+      btn.textContent = '🔴 Stop Sharing Location';
+      btn.className   = 'stop';
+    } else {
+      btn.textContent = '🟢 Start Sharing Location';
+      btn.className   = 'start';
+      document.getElementById('val-speed').textContent    = '—';
+      document.getElementById('val-accuracy').textContent = '—';
+    }
+  }
+
+  function setStatus(text, active) {
+    document.getElementById('status-text').textContent = text;
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot' + (active ? ' active' : '');
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('error-msg').style.display = 'none';
+  }
+
+  // Stop tracking when page unloads (tab closed / navigated away)
+  window.addEventListener('beforeunload', () => {
+    if (isTracking) stopTracking();
+  });
+</script>
+</body>
+</html>
